@@ -1,0 +1,18 @@
+name = "rush-download-service"
+main = "worker.mjs"
+compatibility_date = "2026-10-01"
+workers_dev = true
+preview_urls = false
+
+[vars]
+GITHUB_REPO = "Juice-loot-is-pog/Rush-Dll"
+GITHUB_PATH = "RushClient_Alpha_v3.0.dll"
+GITHUB_BETA_PATH = "RushClient_Beta_v1_MC26.60.dll"
+GITHUB_REF = "main"
+
+# GITHUB_TOKEN and DOWNLOAD_KEY_HASHES are secrets, never committed here.
+
+[[d1_databases]]
+binding = "BETA_DB"
+database_name = "rush-beta"
+database_id = "c5221bef-c8e3-4c2d-b57c-712c082eb71e"

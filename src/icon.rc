@@ -3,4 +3,13 @@
 
 #define IDI_ICON1 101
 
-IDI_ICON1 ICON "icon\\icon.ico"
+IDI_ICON1 ICON "../assets/rush.ico"
+201 RCDATA "../assets/rush-background.png"
+203 RCDATA "../assets/Comfortaa.ttf"
+204 RCDATA "../assets/Mojangles.ttf"
+205 RCDATA "../assets/Open-Sans.ttf"
+206 RCDATA "../assets/Product-Sans.ttf"
+207 RCDATA "../assets/Sarabun-Light.ttf"
+208 RCDATA "../assets/SF-Pro-Display.ttf"
+209 RCDATA "update_injector.ps1"
+210 RCDATA "../assets/developer-icon.png"

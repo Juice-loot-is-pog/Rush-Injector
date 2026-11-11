@@ -13,8 +13,11 @@
 #include <Aclapi.h>
 #include <Sddl.h>
 
-void SetAccessControl(std::wstring &ExecutableName, const wchar_t* AccessString)
+DWORD SetAccessControl(std::wstring &ExecutableName, const wchar_t* AccessString, const wchar_t** failureStage)
 {
+	auto stage = [failureStage](const wchar_t* name) { if (failureStage) *failureStage=name; };
+	stage(L"GetNamedSecurityInfoW / read DLL permissions");
+	DWORD result = ERROR_SUCCESS;
 	PSECURITY_DESCRIPTOR SecurityDescriptor = nullptr;
 	EXPLICIT_ACCESSW ExplicitAccess = { 0 };
 
@@ -25,7 +28,7 @@ void SetAccessControl(std::wstring &ExecutableName, const wchar_t* AccessString)
 	PSID SecurityIdentifier = nullptr;
 
 	if (
-		GetNamedSecurityInfoW(
+		(result = GetNamedSecurityInfoW(
 			ExecutableName.c_str(),
 			SE_FILE_OBJECT,
 			DACL_SECURITY_INFORMATION,
@@ -34,29 +37,32 @@ void SetAccessControl(std::wstring &ExecutableName, const wchar_t* AccessString)
 			&AccessControlCurrent,
 			nullptr,
 			&SecurityDescriptor
-		) == ERROR_SUCCESS
+		)) == ERROR_SUCCESS
 		)
 	{
-		ConvertStringSidToSidW(AccessString, &SecurityIdentifier);
+		stage(L"ConvertStringSidToSidW / application package identity");
+		if (!ConvertStringSidToSidW(AccessString, &SecurityIdentifier)) result = GetLastError();
 		if (SecurityIdentifier != nullptr)
 		{
 			ExplicitAccess.grfAccessPermissions = GENERIC_READ | GENERIC_EXECUTE;
 			ExplicitAccess.grfAccessMode = SET_ACCESS;
-			ExplicitAccess.grfInheritance = SUB_CONTAINERS_AND_OBJECTS_INHERIT;
+			ExplicitAccess.grfInheritance = NO_INHERITANCE;
 			ExplicitAccess.Trustee.TrusteeForm = TRUSTEE_IS_SID;
 			ExplicitAccess.Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
 			ExplicitAccess.Trustee.ptstrName = reinterpret_cast<wchar_t*>(SecurityIdentifier);
 
+			stage(L"SetEntriesInAclW / prepare DLL permissions");
 			if (
-				SetEntriesInAclW(
+				(result = SetEntriesInAclW(
 					1,
 					&ExplicitAccess,
 					AccessControlCurrent,
 					&AccessControlNew
-				) == ERROR_SUCCESS
+				)) == ERROR_SUCCESS
 				)
 			{
-				SetNamedSecurityInfoW(
+				stage(L"SetNamedSecurityInfoW / apply DLL permissions");
+				result = SetNamedSecurityInfoW(
 					const_cast<wchar_t*>(ExecutableName.c_str()),
 					SE_FILE_OBJECT,
 					SecurityInfo,
@@ -76,4 +82,6 @@ void SetAccessControl(std::wstring &ExecutableName, const wchar_t* AccessString)
 	{
 		LocalFree(reinterpret_cast<HLOCAL>(AccessControlNew));
 	}
+	if (SecurityIdentifier) LocalFree(SecurityIdentifier);
+	return result;
 }

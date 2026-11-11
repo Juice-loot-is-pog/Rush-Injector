@@ -1,5 +1,6 @@
 #pragma once
 
 #include <string>
+#include <windows.h>
 
-void SetAccessControl(std::wstring& ExecutableName, const wchar_t* AccessString);
+DWORD SetAccessControl(std::wstring& ExecutableName, const wchar_t* AccessString, const wchar_t** failureStage = nullptr);

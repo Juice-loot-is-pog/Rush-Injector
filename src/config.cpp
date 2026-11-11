@@ -1,13 +1,19 @@
 #include "pch.h"
 #include "config.h"
+#include <wx/stdpaths.h>
+#include <wx/filename.h>
+#include <locale>
+#include <codecvt>
 
 Config::Config() {
-    this->path = Globals::WORKING_DIR;
-    this->path += "\\config.txt";
+    wxString directory = wxStandardPaths::Get().GetUserLocalDataDir();
+    wxFileName::Mkdir(directory, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+    this->path = (directory + "\\config.txt").ToStdWstring();
 }
 
 bool Config::serializeConfig() {
     std::wifstream cFile(this->path);
+    cFile.imbue(std::locale(std::locale::classic(), new std::codecvt_utf8<wchar_t>));
 
     if (cFile.is_open()) {
         std::wstring currLine;
@@ -18,6 +24,7 @@ bool Config::serializeConfig() {
             }
 
             size_t delimiterPos = currLine.find('=');
+            if (delimiterPos == std::wstring::npos) continue;
             this->currentKey = currLine.substr(0, delimiterPos);
 
             this->currentVal = currLine.substr(delimiterPos + 1);
@@ -37,7 +44,7 @@ bool Config::analyzeBool() {
     std::transform(this->currentVal.begin(), this->currentVal.end(), this->currentVal.begin(), [](wchar_t c) {
         return std::tolower(static_cast<int>(c));
     });
-    return (this->currentVal == "true") || (this->currentVal == "1");
+    return (this->currentVal == L"true") || (this->currentVal == L"1");
 }
 
 int Config::analyzeInt() {
@@ -49,11 +56,18 @@ int Config::analyzeInt() {
 
 bool Config::updateConfigFile() const {
     std::wofstream cfgStream(this->path, std::ios::trunc);
+    cfgStream.imbue(std::locale(std::locale::classic(), new std::codecvt_utf8<wchar_t>));
     if (cfgStream.is_open()) {
-        cfgStream << L"# MCBE DLL injector config\n";
+        cfgStream << L"# Rush Injector config\n";
+        cfgStream << L"clientDigest=" + Globals::CLIENT_DIGEST + L'\n';
+        cfgStream << L"clientDigestEndpoint=" + Globals::CLIENT_DIGEST_ENDPOINT + L'\n';
         cfgStream << (Globals::USE_CUSTOM_PROC_NAME ? L"useCustomProcName=true\n" : L"useCustomProcName=false\n");
         cfgStream << L"dllPath=" + Globals::DLL_PATH + '\n';
         cfgStream << L"procName=" + Globals::PROC_NAME + '\n';
+        cfgStream << L"fontFamily=" + Globals::FONT_FAMILY + L'\n';
+        cfgStream << L"colorPreset=" + Globals::COLOR_PRESET + L'\n';
+        cfgStream << (Globals::DISCORD_PRESENCE ? L"discordPresence=true\n" : L"discordPresence=false\n");
+        cfgStream << L"downloadUrl=" + Globals::DOWNLOAD_URL + L'\n';
 
         cfgStream.close();
         return true;
@@ -62,16 +76,33 @@ bool Config::updateConfigFile() const {
 }
 
 void Config::analyzeState() {
-    if (this->currentKey == "useCustomProcName") {
+    if (currentKey == L"clientDigest") { Globals::CLIENT_DIGEST=currentVal; return; }
+    if (currentKey == L"clientDigestEndpoint") { Globals::CLIENT_DIGEST_ENDPOINT=currentVal; return; }
+    if (this->currentKey == L"useCustomProcName") {
         Globals::USE_CUSTOM_PROC_NAME = this->analyzeBool();
     }
-    else if (this->currentKey == "dllPath") {
+    else if (this->currentKey == L"dllPath") {
         Globals::DLL_PATH = this->currentVal;
     }
-    else if (this->currentKey == "procName") {
+    else if (this->currentKey == L"procName") {
         Globals::PROC_NAME = this->currentVal;
     }
+    else if (this->currentKey == L"fontFamily") {
+        if (std::any_of(Globals::FONT_FAMILIES.begin(), Globals::FONT_FAMILIES.end(),
+            [this](const wchar_t* family) { return currentVal == family; }))
+            Globals::FONT_FAMILY = currentVal;
+    }
+    else if (this->currentKey == L"colorPreset") {
+        if (currentVal == L"Red" || currentVal == L"Blue" || currentVal == L"Purple" || currentVal == L"Mono")
+            Globals::COLOR_PRESET = currentVal;
+    }
+    else if (this->currentKey == L"discordPresence") {
+        Globals::DISCORD_PRESENCE = this->analyzeBool();
+    }
+    else if (this->currentKey == L"downloadUrl") {
+        if (!currentVal.empty()) Globals::DOWNLOAD_URL = currentVal;
+    }
     else {
-        wxMessageBox("\"" + this->currentKey + "\" is not a known entry\nDeleting the config file might help!", "WARNING", wxICON_INFORMATION);
+        wxLogWarning("Unknown configuration entry: %s", wxString(this->currentKey));
     }
 }
