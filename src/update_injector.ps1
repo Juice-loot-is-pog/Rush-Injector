@@ -2,7 +2,7 @@ param([int]$ParentId, [string]$Target)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName PresentationFramework
 $releaseUrl = 'https://api.github.com/repos/Juice-loot-is-pog/Rush-Injector/releases/latest'
-$currentVersion = [version]'1.5.12'
+$currentVersion = [version]'1.5.13'
 $headers = @{ 'User-Agent' = 'Rush-Injector-Updater'; Accept = 'application/vnd.github+json' }
 $backup = $null
 $replaced = $false

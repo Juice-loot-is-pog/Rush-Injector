@@ -1,6 +1,6 @@
 
 cmake_minimum_required(VERSION 3.20)
-project(mcbeDllInjector VERSION 1.5.12)
+project(mcbeDllInjector VERSION 1.5.13)
 
 if(NOT WIN32 OR NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
     message(FATAL_ERROR "Build on Windows with an x64 toolchain")
