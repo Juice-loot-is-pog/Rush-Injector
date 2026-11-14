@@ -126,7 +126,7 @@ wxString Pretty(const wxString& text) {
         }
         return count?out:wxString("No beta keys have been created.");
     }
-    if(!field(data,"all_time").empty()) return "Auto Inject statistics\n\nPast 24 hours: "+field(data,"last_24h")+"\nAll time: "+field(data,"all_time")+"\nBeta in past 24 hours: "+field(data,"beta_last_24h")+"\nBeta all time: "+field(data,"beta_all_time")+"\n\nCounts start with this injector version. Manual injections and older versions are not counted. Reports confirm DLL loading, not menu startup.";
+    if(!field(data,"all_time").empty()) return "Inject Rush statistics\n\nPast 24 hours: "+field(data,"last_24h")+"\nAll time: "+field(data,"all_time")+"\nBeta in past 24 hours: "+field(data,"beta_last_24h")+"\nBeta all time: "+field(data,"beta_all_time")+"\n\nCounts start with this injector version. Manual injections and older versions are not counted. Reports confirm DLL loading, not menu startup.";
     if(field(data,"ok")=="true") return "Changes saved. Use View keys to refresh account and key status.";
     return "The server returned an unexpected response.";
 }

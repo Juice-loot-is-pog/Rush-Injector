@@ -174,7 +174,7 @@ static ClientDownloadResult DownloadClientOnce(const std::wstring& endpoint, con
         return Fail(GetLastError(),L"The download service returned an invalid response.");
     if (status != 200) {
         auto result = Fail(status == 401 ? ERROR_LOGON_FAILURE : ERROR_BAD_NET_RESP,
-            status == 401 ? L"Your Rush download key was rejected. Click Auto Inject to enter another key." : L"The service could not supply the client. Contact Rush support.");
+            status == 401 ? L"Your Rush download key was rejected. Click Inject Rush to enter another key." : L"The service could not supply the client. Contact Rush support.");
         result.httpStatus = status;
         result.category=L"unclassified-http";
         wchar_t category[65]{}; DWORD categorySize=sizeof(category);

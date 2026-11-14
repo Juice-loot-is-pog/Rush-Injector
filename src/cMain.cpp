@@ -850,7 +850,7 @@ cMain::cMain() : wxFrame(nullptr, wxID_ANY, "Rush Injector", wxDefaultPosition, 
     inputFields->Add(centeredInput(card,Globals::DLL_PATH,txt_DllPath),0,wxEXPAND);
     txt_DllPath->SetHint("Choose your x64 client DLL...");
     auto* actionButtons = new wxBoxSizer(wxVERTICAL);
-    auto* autoButton = new RushButton(card,wxID_ANY,"Auto Inject: OFF",false,wxSize(220,50));
+    auto* autoButton = new RushButton(card,wxID_ANY,"Inject Rush: OFF",false,wxSize(220,50));
     autoButton->SetFont(font(12,true));
     btn_AutoInject = autoButton;
     actionButtons->Add(autoButton,0,wxBOTTOM,FromDIP(12));
@@ -1006,8 +1006,8 @@ void cMain::RefreshStatus() {
     wxString next;
     if (loaded) next = "Client is running in Minecraft.";
     else if (downloading) next = "Downloading client...";
-    else if (autoInject.Enabled()) next = gamePid ? "Auto Inject on / preparing to load." : "Auto Inject on / waiting for Minecraft.";
-    else if (!wxFileName::FileExists(path)) next = "Choose a client DLL or turn on Auto Inject.";
+    else if (autoInject.Enabled()) next = gamePid ? "Inject Rush on / preparing to load." : "Inject Rush on / waiting for Minecraft.";
+    else if (!wxFileName::FileExists(path)) next = "Choose a client DLL or turn on Inject Rush.";
     else if (!gamePid) next = wxFileName(path).GetFullName() + " / Launch Minecraft to inject.";
     else next = wxFileName(path).GetFullName() + " / Ready to inject.";
     if (processStatus->GetLabel() == game && selectionStatus->GetLabel() == next) return;
@@ -1064,7 +1064,7 @@ void cMain::OnInjectButtonExecute(wxCommandEvent&, cMain& ref, bool interactive)
         if (!interactive) {
             if (processAccessDenied)
                 ref.SetStatusText("Minecraft access denied / open Failure log for diagnostics.");
-            else ref.SetStatusText("Auto Inject failed / Windows error " + std::to_string(result) + " / toggle Auto Inject to retry.");
+            else ref.SetStatusText("Inject Rush failed / Windows error " + std::to_string(result) + " / toggle Inject Rush to retry.");
             return;
         }
         wchar_t* message = nullptr;
@@ -1185,22 +1185,22 @@ void cMain::SetAutoInject(bool enabled) {
     btn_Inject->Enable(!enabled && !injectionBusy && !downloading);
     btn_Inject->Refresh();
     auto* button = static_cast<RushButton*>(btn_AutoInject);
-    button->SetLabel(clientUpdateAvailable ? "Auto Inject: UPDATE (1)" : enabled ? "Auto Inject: ON" : "Auto Inject: OFF");
+    button->SetLabel(clientUpdateAvailable ? "Inject Rush: UPDATE (1)" : enabled ? "Inject Rush: ON" : "Inject Rush: OFF");
     button->SetPrimary(enabled);
     RefreshStatus();
 }
 void cMain::RefreshUpdatePing() {
     if (!downloading) {
-        btn_AutoInject->SetLabel(clientUpdateAvailable ? "Auto Inject: UPDATE (1)" :
-            autoInject.Enabled() ? "Auto Inject: ON" : "Auto Inject: OFF");
+        btn_AutoInject->SetLabel(clientUpdateAvailable ? "Inject Rush: UPDATE (1)" :
+            autoInject.Enabled() ? "Inject Rush: ON" : "Inject Rush: OFF");
         static_cast<RushButton*>(btn_AutoInject)->SetPrimary(clientUpdateAvailable || autoInject.Enabled());
         btn_AutoInject->SetToolTip(clientUpdateAvailable ?
-            "New Rush client available. Turn Auto Inject off and on to download. Restart Minecraft if a client is already loaded." :
+            "New Rush client available. Turn Inject Rush off and on to download. Restart Minecraft if a client is already loaded." :
             "Download the Rush client and inject when Minecraft starts.");
     }
     if (auto* taskbar = MSWGetTaskBarButton()) {
         const bool available = injectorUpdateAvailable || clientUpdateAvailable;
-        const wxString message = clientUpdateAvailable ? "Rush client update available / use Auto Inject" :
+        const wxString message = clientUpdateAvailable ? "Rush client update available / use Inject Rush" :
             injectorUpdateAvailable ? "Rush Injector update available" : "Rush Injector";
         taskbar->SetOverlayIcon(available ? UpdateBadgeIcon() : wxNullIcon,message);
         taskbar->SetThumbnailTooltip(message);
@@ -1273,7 +1273,7 @@ void cMain::ToggleAutoInject() {
         SetStatusText("Canceling client download..."); return;
     }
     if (injectionBusy) return;
-    if (autoInject.Enabled()) { SetAutoInject(false); SetStatusText("Auto Inject disabled."); return; }
+    if (autoInject.Enabled()) { SetAutoInject(false); SetStatusText("Inject Rush disabled."); return; }
     std::wstring key;
     const bool hasSavedKey = !Globals::DOWNLOAD_URL.empty() && ReadDownloadKey(Globals::DOWNLOAD_URL,key);
     const bool publicAlpha=PublicClientEndpoint(Globals::DOWNLOAD_URL);
