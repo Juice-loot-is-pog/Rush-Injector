@@ -33,3 +33,15 @@ CREATE TABLE IF NOT EXISTS beta_devices (
   device_hash TEXT NOT NULL,
   bound_at INTEGER NOT NULL
 );
+-- Patreon sign-in (patreon.mjs): which Patreon account owns which Beta key.
+CREATE TABLE IF NOT EXISTS patreon_links (
+  patreon_id TEXT PRIMARY KEY,
+  key_id TEXT UNIQUE NOT NULL REFERENCES beta_keys(id),
+  created_at INTEGER NOT NULL
+);
+-- One-use Patreon sign-in states, kept for 10 minutes.
+CREATE TABLE IF NOT EXISTS oauth_states (
+  state TEXT PRIMARY KEY,
+  new_key INTEGER NOT NULL DEFAULT 0,
+  expires_at INTEGER NOT NULL
+);

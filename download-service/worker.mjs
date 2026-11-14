@@ -1,4 +1,5 @@
 import {betaRoutes, activeBetaKey} from './beta.mjs';
+import {patreonRoutes} from './patreon.mjs';
 const MAX_BYTES = 32 * 1024 * 1024;
 const HEADER_BYTES = 4096;          // PE headers must sit inside the first 4 KiB.
 const HEADERS_TIMEOUT_MS = 30000;   // Upstream must start answering within this.
@@ -75,6 +76,8 @@ export function createWorker(fetchUpstream = fetch) {
 
   return {
     async fetch(request, env) {
+      const patreonResponse = await patreonRoutes(request,env);
+      if (patreonResponse) return patreonResponse;
       const betaResponse = await betaRoutes(request,env);
       if (betaResponse) return betaResponse;
       const betaDownload=new URL(request.url).pathname==='/beta/client';

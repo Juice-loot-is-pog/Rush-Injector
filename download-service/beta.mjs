@@ -1,4 +1,5 @@
 import {validAlphaKey} from './download_auth.mjs';
+import {patreonKeyMessage} from './patreon.mjs';
 const encode = new TextEncoder();
 const digest = async value => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', encode.encode(value))), b => b.toString(16).padStart(2,'0')).join('');
 const json = (value, status = 200) => Response.json(value, {status, headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
@@ -26,7 +27,7 @@ export async function betaRoutes(request, env) {
       if(!key || !usernameValid(username) || !/^[a-f0-9]{64}$/.test(device||'')) return json({error:'Valid username, secret beta key and device identity required'},400);
       const account=await env.BETA_DB.prepare(`SELECT k.id FROM beta_keys k JOIN beta_accounts a ON a.username=k.username
         WHERE k.key_hash=? AND k.username=? AND k.revoked_at IS NULL AND k.expires_at>? AND a.status='active'`).bind(await digest(key),username,Date.now()).first();
-      if(!account) return json({error:'Username or key rejected, expired or suspended'},401);
+      if(!account) return json({error:await patreonKeyMessage(env,key) || 'Username or key rejected, expired or suspended'},401);
       await env.BETA_DB.prepare('INSERT OR IGNORE INTO beta_devices(key_id,device_hash,bound_at) VALUES(?,?,?)').bind(account.id,device,Date.now()).run();
       const verified=await activeBetaKey(request,env);
       if(!verified) return json({error:'This key is bound to another device. Ask a developer to reset it.'},403);
@@ -122,7 +123,7 @@ export async function betaRoutes(request, env) {
       return json({error:'Unknown endpoint or invalid input'},400);
     }
     const account=await activeBetaKey(request,env);
-    if (!account) return json({error:'Beta key expired, revoked, suspended, or invalid'},401);
+    if (!account) return json({error:await patreonKeyMessage(env,bearer(request)) || 'Beta key expired, revoked, suspended, or invalid'},401);
     if (path==='/beta/status' && request.method==='GET') return json({...account,status:'active',time_left_seconds:Math.max(0,Math.floor((account.expires_at-Date.now())/1000))});
     if (path==='/beta/injection' && request.method==='POST') {
       const id=request.headers.get('Idempotency-Key');

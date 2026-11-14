@@ -10,7 +10,15 @@ GITHUB_PATH = "RushClient_Alpha_v3.0.dll"
 GITHUB_BETA_PATH = "RushClient_Beta_v1_MC26.60.dll"
 GITHUB_REF = "main"
 
-# GITHUB_TOKEN and DOWNLOAD_KEY_HASHES are secrets, never committed here.
+# Patreon sign-in (patreon.mjs). Fill these in from the Patreon developer portal before deploying.
+PATREON_CLIENT_ID = ""
+PATREON_CAMPAIGN_ID = ""
+PATREON_BETA_TIER_IDS = ""
+PATREON_ALLOWED_USER_IDS = ""
+RUSH_SITE_URL = ""
+
+# GITHUB_TOKEN, DOWNLOAD_KEY_HASHES, PATREON_CLIENT_SECRET and PATREON_WEBHOOK_SECRET are
+# secrets, never committed here.
 
 [[d1_databases]]
 binding = "BETA_DB"
