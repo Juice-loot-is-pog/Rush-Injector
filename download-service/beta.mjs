@@ -6,6 +6,9 @@ const json = (value, status = 200) => Response.json(value, {status, headers:{'Ca
 const bearer = request => /^Bearer ([A-Za-z0-9_-]{32,128})$/.exec(request.headers.get('Authorization') || '')?.[1];
 const randomKey = () => Array.from(crypto.getRandomValues(new Uint8Array(32)), b => b.toString(16).padStart(2,'0')).join('');
 const usernameValid = value => typeof value === 'string' && /^[A-Za-z0-9_.-]{1,48}$/.test(value);
+const keyIdValid = value => typeof value === 'string' && /^[a-f0-9-]{36}$/i.test(value);
+// "Lifetime" keys expire at the end of year 9999 (ms), so every expiry check keeps working unchanged.
+export const LIFETIME_EXPIRES_AT = Date.UTC(9999, 11, 31, 23, 59, 59);
 export async function activeBetaKey(request, env) {
   const key = bearer(request);
   const device=request.headers.get('X-Device-Hash');
@@ -82,10 +85,11 @@ export async function betaRoutes(request, env) {
       let data; try { data=JSON.parse(raw); } catch { return json({error:'Invalid JSON'},400); }
       if (path === '/admin/keys') {
         const days={day:1,week:7,month:30};
-        const seconds=data.duration==='custom' ? data.seconds : days[data.duration]*86400;
-        if (!usernameValid(data.username) || !Number.isSafeInteger(seconds) || seconds<60 || seconds>31536000)
-          return json({error:'Use a valid username and day/week/month or custom seconds (60–31536000)'},400);
-        const key=randomKey(), id=crypto.randomUUID(), now=Date.now(), expires=now+seconds*1000;
+        const lifetime=data.duration==='lifetime';
+        const seconds=lifetime ? 0 : data.duration==='custom' ? data.seconds : days[data.duration]*86400;
+        if (!usernameValid(data.username) || (!lifetime && (!Number.isSafeInteger(seconds) || seconds<60 || seconds>31536000)))
+          return json({error:'Use a valid username and day/week/month/lifetime or custom seconds (60–31536000)'},400);
+        const key=randomKey(), id=crypto.randomUUID(), now=Date.now(), expires=lifetime ? LIFETIME_EXPIRES_AT : now+seconds*1000;
         await env.BETA_DB.batch([
           env.BETA_DB.prepare('INSERT OR IGNORE INTO beta_accounts(username,created_at) VALUES(?,?)').bind(data.username,now),
           env.BETA_DB.prepare('INSERT INTO beta_keys(id,key_hash,username,created_at,expires_at) VALUES(?,?,?,?,?)').bind(id,await digest(key),data.username,now,expires)
@@ -102,6 +106,38 @@ export async function betaRoutes(request, env) {
           env.BETA_DB.prepare('INSERT OR IGNORE INTO removed_beta_keys(key_id) SELECT id FROM beta_keys WHERE id=?').bind(data.id)
         ]);
         return json({ok:true});
+      }
+      if(path==='/admin/extend' && keyIdValid(data.id) && data.lifetime===true) {
+        const result=await env.BETA_DB.prepare(`UPDATE beta_keys SET expires_at=?
+          WHERE id=? AND revoked_at IS NULL
+          AND NOT EXISTS(SELECT 1 FROM removed_beta_keys r WHERE r.key_id=beta_keys.id)`).bind(LIFETIME_EXPIRES_AT,data.id).run();
+        if(!result.meta?.changes) return json({error:'Key not found or revoked'},404);
+        return json({ok:true,expires_at:LIFETIME_EXPIRES_AT});
+      }
+      if(path==='/admin/rotate' && keyIdValid(data.id)) {
+        // New secret on the same key (lost key or re-send): the old secret stops working and the
+        // device lock is cleared so the next sign-in binds again. Expiry and history stay.
+        const key=randomKey();
+        const result=await env.BETA_DB.prepare(`UPDATE beta_keys SET key_hash=?
+          WHERE id=? AND revoked_at IS NULL
+          AND NOT EXISTS(SELECT 1 FROM removed_beta_keys r WHERE r.key_id=beta_keys.id)`).bind(await digest(key),data.id).run();
+        if(!result.meta?.changes) return json({error:'Key not found or revoked'},404);
+        await env.BETA_DB.prepare('DELETE FROM beta_devices WHERE key_id=?').bind(data.id).run();
+        return json({id:data.id,key,notice:'Save this key now; it is shown once.'});
+      }
+      if(path==='/admin/key-info' && keyIdValid(data.id)) {
+        const now=Date.now();
+        const k=await env.BETA_DB.prepare(`SELECT k.id,k.username,k.created_at,k.expires_at,k.revoked_at,a.status AS account_status,
+          EXISTS(SELECT 1 FROM beta_devices d WHERE d.key_id=k.id) AS device_bound,
+          EXISTS(SELECT 1 FROM removed_beta_keys r WHERE r.key_id=k.id) AS removed
+          FROM beta_keys k JOIN beta_accounts a ON a.username=k.username WHERE k.id=?`).bind(data.id).first();
+        if(!k) return json({error:'Key not found'},404);
+        return json({...k,lifetime:k.expires_at>=LIFETIME_EXPIRES_AT,time_left_seconds:Math.max(0,Math.floor((k.expires_at-now)/1000)),
+          active:!k.revoked_at && !k.removed && k.expires_at>now && k.account_status==='active'});
+      }
+      if(path==='/admin/account-exists' && usernameValid(data.username)) {
+        const row=await env.BETA_DB.prepare('SELECT 1 AS found FROM beta_accounts WHERE username=?').bind(data.username).first();
+        return json({exists:!!row});
       }
       if(path==='/admin/extend' && typeof data.id==='string' && /^[a-f0-9-]{36}$/i.test(data.id)) {
         if(!Number.isSafeInteger(data.seconds) || data.seconds<60 || data.seconds>31536000)

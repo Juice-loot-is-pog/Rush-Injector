@@ -6,7 +6,11 @@ Keep the plaintext administrator key outside the executable and repository. Admi
 
 Endpoints:
 
-- `POST /admin/keys`: JSON `username`, `duration` (`day`, `week`, `month`, `custom`), and `seconds` for custom duration. A month is 30 days. Expiration begins at creation. Returns the plaintext key once.
+- `POST /admin/keys`: JSON `username`, `duration` (`day`, `week`, `month`, `lifetime`, `custom`), and `seconds` for custom duration. A month is 30 days. Expiration begins at creation; `lifetime` expires at the end of year 9999. Returns the plaintext key once.
+- `POST /admin/extend`: JSON `id` plus `seconds` (60–31536000, added to the later of now and the current expiry) or `lifetime: true`. Revoked or removed keys are refused.
+- `POST /admin/rotate`: JSON `id` replaces the key's secret and returns the new plaintext key once. The old secret stops working, the device binding is cleared, expiry and history stay. Revoked or removed keys are refused. Used by the Discord bot's `/beta newkey`.
+- `POST /admin/key-info`: JSON `id`; one key's username, expiry, `lifetime`, revoked/removed, account status, device binding and `active`.
+- `POST /admin/account-exists`: JSON `username`; `{exists}`. The Discord bot uses it to avoid giving a buyer someone else's username.
 - `GET /admin/keys`: newest 1,000 keys, account status, expiry, remaining seconds and active status; never key hashes or secrets.
 - `POST /admin/revoke`: JSON `id` permanently revokes a key.
 - `POST /admin/reset-device`: JSON `id` clears device binding. The next successful username/secret login binds the key again.

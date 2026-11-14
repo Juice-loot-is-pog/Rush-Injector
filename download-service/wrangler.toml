@@ -11,8 +11,8 @@ GITHUB_BETA_PATH = "RushClient_Beta_v1_MC26.60.dll"
 GITHUB_REF = "main"
 
 # Patreon sign-in (patreon.mjs). Fill these in from the Patreon developer portal before deploying.
-PATREON_CLIENT_ID = ""
-PATREON_CAMPAIGN_ID = ""
+PATREON_CLIENT_ID = "OztPwxuakXQyC_D9S6_ZVXsHUyY0g8npV8jBsNbhA90MHRuU01b1mygMuH6cCcIc"
+PATREON_CAMPAIGN_ID = "17055359"
 PATREON_BETA_TIER_IDS = ""
 PATREON_ALLOWED_USER_IDS = ""
 RUSH_SITE_URL = ""
