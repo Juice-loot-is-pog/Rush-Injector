@@ -43,7 +43,7 @@ try {
     $env:GIT_INDEX_FILE = $previousIndex
     Remove-Item -LiteralPath $index -ErrorAction SilentlyContinue
 }
-$body = @{ tag_name = "v$version"; name = "Rush Injector $version"; draft = $true; body = 'Adds a Discord Rich Presence toggle to the Theme window. The Discord icon is grey when off and uses your theme colour when on, and the choice is remembered between launches. Includes executable, SHA-256 checksum and corresponding GPL source.' } | ConvertTo-Json
+$body = @{ tag_name = "v$version"; name = "Rush Injector $version"; draft = $true; body = 'Renames the Auto Inject button to Inject Rush, including its status messages and tooltips. Includes executable, SHA-256 checksum and corresponding GPL source.' } | ConvertTo-Json
 $release = Invoke-RestMethod -Method Post -Uri "$api/releases" -Headers $headers -Body $body -ContentType 'application/json'
 $upload = $release.upload_url -replace '\{.*$', ''
 foreach ($asset in @(@{Path=$exe;Name='Rush-Injector.exe'}, @{Path=$checksum;Name='Rush-Injector.exe.sha256'}, @{Path=$source;Name='Rush-Injector-source.zip'})) {
